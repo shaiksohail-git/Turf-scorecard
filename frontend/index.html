@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GullyScore — Home</title>
+    <meta
+      name="description"
+      content="Fast, rule-aware scoring for turf cricket and full T20 matches."
+    />
+    <meta name="theme-color" content="#07110c" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("gully-theme");
+          var dark = stored ? stored === "dark" : true;
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (error) {
+          /* keep the dark default */
+        }
+      })();
+    </script>
+    <script src="/config.js"></script>
+    <script type="module" src="/js/home.js"></script>
+  </head>
+  <body class="min-h-dvh bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-400 focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-emerald-950"
+      >Skip to content</a
+    >
+    <div id="shell"></div>
+
+    <main id="main">
+      <header class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400" id="today"></p>
+          <h1 class="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+            Ready for the next over?
+          </h1>
+          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Score a turf game in minutes, or follow a match in progress.
+          </p>
+        </div>
+        <a
+          href="/pages/match-type.html"
+          class="hidden min-h-12 items-center justify-center rounded-xl bg-primary-400 px-5 text-sm font-bold text-emerald-950 hover:bg-primary-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 sm:inline-flex"
+          >New match</a
+        >
+      </header>
+
+      <section aria-labelledby="ongoing-heading" class="mt-8">
+        <div class="mb-3 flex items-baseline justify-between gap-3">
+          <h2 id="ongoing-heading" class="text-base font-semibold tracking-tight">
+            Ongoing matches
+          </h2>
+          <a
+            href="/pages/matches.html?status=live"
+            class="text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300"
+            >View live</a
+          >
+        </div>
+        <div id="ongoing" class="space-y-3" aria-busy="true">
+          <p class="text-sm text-zinc-500 dark:text-zinc-400" role="status">Loading matches…</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="recent-heading" class="mt-8">
+        <div class="mb-3 flex items-baseline justify-between gap-3">
+          <h2 id="recent-heading" class="text-base font-semibold tracking-tight">
+            Previous matches
+          </h2>
+          <a
+            href="/pages/matches.html"
+            class="text-sm font-semibold text-primary-700 hover:underline dark:text-primary-300"
+            >Match history</a
+          >
+        </div>
+        <div id="recent" class="space-y-3" aria-busy="true">
+          <p class="text-sm text-zinc-500 dark:text-zinc-400" role="status">Loading matches…</p>
+        </div>
+      </section>
+
+      <section class="mt-8 grid gap-3 sm:grid-cols-2">
+        <a
+          href="/pages/series-new.html"
+          class="rounded-2xl border border-zinc-200 bg-white p-4 hover:border-primary-400 dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <p class="text-sm font-semibold">Create a series</p>
+          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Group fixtures and keep results together.
+          </p>
+        </a>
+        <a
+          href="/pages/stats.html"
+          class="rounded-2xl border border-zinc-200 bg-white p-4 hover:border-primary-400 dark:border-zinc-800 dark:bg-zinc-900"
+        >
+          <p class="text-sm font-semibold">Check the stats</p>
+          <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Leading run scorers and wicket takers.
+          </p>
+        </a>
+      </section>
+    </main>
+
+    <a
+      href="/pages/match-type.html"
+      class="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-primary-400 px-5 text-base font-bold text-emerald-950 shadow-lg hover:bg-primary-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-400 sm:hidden"
+    >
+      <span aria-hidden="true" class="text-xl leading-none">+</span> New match
+    </a>
+  </body>
+</html>

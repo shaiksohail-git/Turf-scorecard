@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="GullyScore">
+  <rect width="512" height="512" rx="112" fill="#07110c"/>
+  <path d="M96 344V168h320v176c0 26-21 48-48 48H144c-27 0-48-22-48-48Z" fill="#52E4A0"/>
+  <path d="M96 228h320v40H96z" fill="#07110c" opacity=".18"/>
+  <circle cx="176" cy="294" r="24" fill="#07110c"/>
+  <circle cx="336" cy="294" r="24" fill="#07110c"/>
+  <path d="M208 144h96v48h-96z" fill="#f4f7f5"/>
+  <path d="M232 112h48v48h-48z" fill="#f4f7f5"/>
+  <text x="256" y="414" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" font-weight="700" fill="#f4f7f5">GS</text>
+</svg>

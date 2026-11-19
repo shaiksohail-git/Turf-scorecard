@@ -1,0 +1,19 @@
+"""Shared model helpers."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from ..extensions import db
+
+
+def utcnow() -> datetime:
+    """Timezone-aware UTC timestamp used for every persisted timestamp."""
+    return datetime.now(timezone.utc)
+
+
+class TimestampMixin:
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )

@@ -1,0 +1,20 @@
+{
+  "name": "GullyScore — Cricket Scoring",
+  "short_name": "GullyScore",
+  "description": "Rule-aware ball-by-ball cricket scoring for turf and T20 matches.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07110c",
+  "theme_color": "#07110c",
+  "categories": ["sports", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512 any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

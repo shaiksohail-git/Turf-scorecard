@@ -1,0 +1,13 @@
+{
+  "name": "gullyscore-frontend",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Tailwind CSS build for the GullyScore static frontend.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./frontend/css/tailwind.css -o ./frontend/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./frontend/css/tailwind.css -o ./frontend/css/app.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

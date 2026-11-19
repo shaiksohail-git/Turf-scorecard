@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live scoring — GullyScore</title>
+    <meta name="description" content="Ball-by-ball scoring for the current match." />
+    <meta name="theme-color" content="#07110c" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/css/app.css" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("gully-theme");
+          document.documentElement.classList.toggle("dark", stored ? stored === "dark" : true);
+        } catch (error) {}
+      })();
+    </script>
+    <script src="/config.js"></script>
+    <script type="module" src="/js/live.js"></script>
+  </head>
+  <body class="min-h-dvh bg-zinc-100 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100">
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-primary-400 focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-emerald-950"
+      >Skip to content</a
+    >
+    <div id="shell"></div>
+    <main id="main">
+      <div id="live-root" aria-busy="true">
+        <p class="text-sm text-zinc-500 dark:text-zinc-400" role="status">Loading match…</p>
+      </div>
+    </main>
+  </body>
+</html>
