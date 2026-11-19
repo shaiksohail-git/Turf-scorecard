@@ -6,7 +6,7 @@ append-only delivery log so corrections never rewrite history.
 
 - **Backend:** Python 3.11+, Flask, SQLAlchemy, Alembic (Flask-Migrate), PostgreSQL
 - **Frontend:** static HTML, compiled Tailwind CSS, ES modules — no framework
-- **Tests:** 171 pytest tests covering rules, scoring, extras, wickets, API lifecycle, normalized schema, stats, solo batting, retirements, fantasy, series management, authentication, authorization, pagination and security headers
+- **Tests:** 163 pytest tests covering rules, scoring, extras, wickets, API lifecycle, normalized schema, stats, solo batting, retirements, fantasy, series management, authentication, authorization, pagination and security headers
 
 ## Phase 5 scope
 
@@ -16,8 +16,9 @@ source of truth.
 
 | Area | Delivered |
 | --- | --- |
-| Testing | 171 automated tests for T20/custom/turf scoring, extras, free hits, wickets, solo batting, retirements, strike rotation, innings transitions, DLS-free run chases, results, fantasy, series boards, undo/corrections, auth, CSRF, ownership, rate limits, pagination and headers |
-| Offline PWA | Manifest, installable app shell, versioned service worker, offline indicator, durable localStorage delivery queue, exactly-once retry via `client_event_id`, and online-only conflict-sensitive undo/retirements |
+| Testing | 163 automated tests for T20/custom/turf scoring, extras, free hits, wickets, solo batting, retirements, strike rotation, innings transitions, DLS-free run chases, results, fantasy, series boards, undo/corrections, auth, CSRF, ownership, rate limits, pagination and headers |
+| Offline PWA | Manifest, installable app shell, versioned service worker with automatic update reload, offline indicator, durable localStorage delivery queue, exactly-once retry via `client_event_id`, a rejected-delivery recovery list, and online-only conflict-sensitive undo/retirements |
+| Reliability | Collapsible desktop sidebar with remembered state and a content offset; over-limit bowlers are disabled in the scoring pad; rejected deliveries are archived instead of blocking later balls, with pending/rejected counts and a discard action on the live page |
 | Performance | Composite indexes for match history/events, paginated `/api/matches` with metadata, load-more history UI, one GET per idle scoring refresh, and a cache-first static shell |
 | Security | Optional signed-session auth, Werkzeug password hashing, owner-scoped matches/series, CSRF protection, validation, fixed-window rate limits, security headers, HSTS when TLS is enabled and an audit-log table |
 | Deployment | Gunicorn Procfile, Dockerfile, Render blueprint, Vercel static config, CI workflow, backup script and production smoke test |
@@ -100,11 +101,13 @@ frontend/                     static site served by Flask (same origin as the AP
   pages/setup-turf.html       Custom Turf setup
   pages/series-new.html       Series creation with roster and planned length
   pages/series.html           Series dashboard, boards, fantasy and awards
-  pages/live.html             Live scoring pad
+  pages/live.html             Live scoring pad with offline queue and recovery
   pages/scorecard.html        Full batting/bowling scorecard
   pages/stats.html            Totals and leaderboards
   pages/settings.html         Appearance, scorer profile, system status
-  components/shell.js         Sidebar/topbar/bottom nav + theme toggles
+  pages/login.html            Optional sign-in and first-account bootstrap
+  sw.js                       Versioned app-shell service worker
+  components/shell.js         Sidebar/topbar/bottom nav, theme toggles, collapsible sidebar
   components/ui.js            Reusable cards, badges, empty and error states
   css/tailwind.css            Tailwind source
   css/app.css                 Compiled stylesheet (committed)
@@ -115,10 +118,10 @@ backend/
   app/
     models/                   User, Team, Player, Match, MatchTeam, MatchRules,
                               Innings, Delivery, Series, SeriesMatch, MatchEvent,
-                              PlayerMatchStatistics, Retirement, FantasyPoint
-    services/                 rules, scoring, innings, match, notifications-free
-                              read models (statistics, scorecard), series, users, stats
-    routes/                   health, rules, matches, scoring, series, users, stats
+                              PlayerMatchStatistics, Retirement, FantasyPoint, AuditLog
+    services/                 rules, scoring, innings, match, statistics, scorecard,
+                              series, users, stats
+    routes/                   health, rules, matches, scoring, series, users, stats, auth
     utils/                    serializers and request helpers
   migrations/                 Alembic environment + revisions
 database/schema.sql           PostgreSQL reference DDL (mirrors the head revision)
@@ -146,7 +149,7 @@ pip install -r requirements.txt
 cp .env.example .env          # then set DATABASE_URL and GULLY_SECRET_KEY
 ```
 
-Create the database and apply both migrations:
+Create the database and apply all Alembic migrations:
 
 ```bash
 createdb gullyscore
@@ -192,14 +195,36 @@ is no client-side router and no framework.
 | Setup | `/pages/setup-turf.html` etc. | Teams, squads in batting order, toss, editable rules, creates and starts the match |
 | Series creation | `/pages/series-new.html` | Name, match type/preset, teams, players, planned matches, dates and notes |
 | Series dashboard | `/pages/series.html?id=1` | Editable details/length, standings, MVP, every batting/bowling board, rewards and recent results |
-| Live scoring | `/pages/live.html?match=1` | Scoreboard, solo mode, striker/non-striker, bowler, run pad, extras, wicket, undo, free hit, retire/return |
+| Live scoring | `/pages/live.html?match=1` | Scoreboard, solo mode, striker/non-striker, over-limit-safe bowler selection, run pad, extras, wicket, undo, free hit, retire/return, offline queue and rejected-ball recovery |
 | Scorecard | `/pages/scorecard.html?match=1` | Batting, bowling, extras, fall of wickets, partnerships, retirements and ball-by-ball commentary |
 | Stats | `/pages/stats.html` | Totals, run/wicket/fantasy leaderboards, full player table and team win/loss table |
 | Settings | `/pages/settings.html` | Dark/light preference, scorer display name, API health |
 
 Design: dark by default with a remembered light theme, accent `#52E4A0`,
-mobile-first spacing, bottom navigation below `lg`, a fixed sidebar at `lg` and
-up, minimum 44px touch targets, visible focus rings and skip links.
+mobile-first spacing, bottom navigation below `lg`, a collapsible fixed sidebar
+at `lg` and up, minimum 44px touch targets, visible focus rings and skip links.
+The sidebar offset is applied to the page body, so the main content never sits
+under it; its open/closed state is remembered in local storage.
+
+## Reliability and offline behaviour
+
+- A completed ball is written to `gully-score-queue-v1` before the request is
+  sent, so a dropped connection does not lose it. The server's
+  `(innings_id, client_event_id)` constraint makes retries idempotent.
+- `409` and `422` responses are moved to `gully-score-failed-v1` instead of
+  staying at the head of the queue. This keeps one invalid ball from blocking
+  every later ball. The live page reports the count and can discard the local
+  recovery entries.
+- Network errors and `401` stop the current sync without discarding the queue;
+  the next online event or background sync retry resumes it.
+- Only one sync runs at a time. Undo and retirement changes remain online-only
+  because they need the current innings state.
+- The scoring pad disables bowlers who have reached `max_overs_per_bowler` and
+  automatically selects an eligible bowler when the previous over ended on a
+  bowler's limit.
+- The service worker bumps its cache version with each shell change and reloads
+  once when a new worker takes control, so an open tab does not stay on stale
+  JavaScript or CSS.
 
 ## Database
 
@@ -305,8 +330,10 @@ while copying every row, and backfills `match_teams`, `match_rules`,
 (`b7d1e4c9a2f0`) adds retirements, the fantasy ledger, `matches.fantasy_config`
 and extended player-stat columns, backfilling `fantasy_config` for existing
 matches. The fourth revision (`d2e8a4c7f1b9`) adds the planned series length and
-selected team/player snapshots, backfilling the plan from existing matches. All
-upgrade and downgrade paths are implemented.
+selected team/player snapshots, backfilling the plan from existing matches. The
+fifth revision (`f4a9c2d6b8e1`) adds optional authentication fields to users,
+series ownership, the `audit_logs` table and composite indexes for paginated
+history/detail reads. All upgrade and downgrade paths are implemented.
 
 ## Default Custom Turf rules
 
@@ -410,8 +437,9 @@ security: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md),
 - Production auth is opt-in and single-scorekeeper oriented; there is no
   password-reset email flow or multi-tenant team management.
 - The live pad queues deliveries offline; undo and retirement changes require
-  a connection because they need the current server state. There is no
-  multi-device realtime sync.
+  a connection because they need the current server state. Rejected balls are
+  kept locally until the scorer discards them and are never retried
+  automatically. There is no multi-device realtime sync.
 - The fixed-window rate limiter and Flask sessions are process-local. Use one
   Gunicorn worker or add shared storage before scaling out.
 - The service worker caches static assets and authenticated GETs for offline
@@ -426,5 +454,3 @@ security: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md),
   types and the upgrade/downgrade were exercised on SQLite; run `db upgrade` on a
   PostgreSQL instance before production use. `SELECT … FOR UPDATE` locking is
   PostgreSQL-only and is skipped on SQLite.
-#   T u r f - s c o r e c a r d  
- 
